@@ -2,28 +2,14 @@ FROM  qgis/qgis3-build-deps:final-3_32_2
 
 LABEL Description="Docker container with QGIS" Vendor="QGIS.org" Version="1.1"
 
-# build timeout in seconds, so no timeout by default
-ARG BUILD_TIMEOUT=360000
-
-ARG CC=/usr/lib/ccache/gcc
-ARG CXX=/usr/lib/ccache/g++
 ENV LANG=C.UTF-8
 
-WORKDIR /QGIS
+WORKDIR /ccache_dir
+ENV CCACHE_DIR=/ccache_dir
+#RUN ccache -M 1G && ccache -s
 
-# If this directory is changed, also adapt script.sh which copies the directory
-# if ccache directory is not provided with the source
-RUN mkdir -p /QGIS/.ccache_image_build
-ENV CCACHE_DIR=/QGIS/.ccache_image_build
-RUN ccache -M 1G
-RUN ccache -s
-
-RUN echo "ccache_dir: "$(du -h --max-depth=0 ${CCACHE_DIR})
-
-WORKDIR /QGIS/build
-
-# Additional run-time dependencies
-RUN pip3 install jinja2 pygments pexpect && apt install -y expect
+# Additional run-time dependencies and gdb for debugging qgis
+RUN pip3 install jinja2 pygments pexpect && apt install -y expect gdb
 
 ################################################################################
 # Python testing environment setup
@@ -44,31 +30,5 @@ COPY qgis_resources/supervisor/ /etc/supervisor
 # needed to find PyQt wrapper provided by QGIS
 ENV PYTHONPATH=/usr/share/qgis/python/:/usr/share/qgis/python/plugins:/usr/lib/python3/dist-packages/qgis:/usr/share/qgis/python/qgis
 
-WORKDIR /QGIS
-
-# RUN SUCCESS=OK \
-#   && cmake \
-#   -GNinja \
-#   -DUSE_CCACHE=OFF \
-#   -DCMAKE_BUILD_TYPE=Release \
-#   -DCMAKE_INSTALL_PREFIX=/usr \
-#   -DWITH_DESKTOP=ON \
-#   -DWITH_SERVER=ON \
-#   -DWITH_3D=ON \
-#   -DWITH_BINDINGS=ON \
-#   -DWITH_CUSTOM_WIDGETS=ON \
-#   -DBINDINGS_GLOBAL_INSTALL=ON \
-#   -DWITH_STAGED_PLUGINS=ON \
-#   -DWITH_GRASS=ON \
-#   -DSUPPRESS_QT_WARNINGS=ON \
-#   -DDISABLE_DEPRECATED=ON \
-#   -DENABLE_TESTS=OFF \
-#   -DWITH_QSPATIALITE=ON \
-#   -DWITH_APIDOC=OFF \
-#   -DWITH_ASTYLE=OFF \
-#   .. \
-#   && ninja install || SUCCESS=FAILED \
-#   && echo "$SUCCESS" > /QGIS/build_exit_value
-
-# Run supervisor
+# Run supervisor for xvcd
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
