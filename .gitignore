@@ -29,6 +29,7 @@
 .pydevproject
 .venv
 .vscode
+!.vscode/launch.json
 /CMakeLists.txt.user
 /CMakeLists.txt.user.*
 /build*
